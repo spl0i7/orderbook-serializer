@@ -1,0 +1,7 @@
+streams = [
+  "bitfinix",
+  "coinbase"
+]
+[redis]
+    redis_host = "localhost:6379"
+    redis_password = ""
