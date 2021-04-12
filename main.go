@@ -37,7 +37,9 @@ func main() {
 	}
 
 	// Create disk manager, default write timeout of 1 minute
-	diskManager := NewDiskManager(nil)
+	diskManager := NewDiskManager(&DiskManagerOpts{
+		PathPrefix: config.Directory,
+	})
 	diskManager.Start()
 	defer diskManager.Stop()
 

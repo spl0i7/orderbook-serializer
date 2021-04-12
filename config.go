@@ -6,6 +6,7 @@ type RedisConfig struct {
 }
 
 type Config struct {
-	Redis RedisConfig `toml:"redis"`
-	Streams []string `toml:"streams"`
+	Redis     RedisConfig `toml:"redis"`
+	Streams   []string    `toml:"streams"`
+	Directory string      `toml:"directory"`
 }

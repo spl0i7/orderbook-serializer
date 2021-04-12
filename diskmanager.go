@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -14,6 +15,7 @@ type DiskManagerOpts struct {
 	WorkerTimeout      time.Duration
 	WorkerChannelSize  uint
 	ManagerChannelSize uint
+	PathPrefix         string
 }
 
 type DiskManager struct {
@@ -23,6 +25,7 @@ type DiskManager struct {
 	stop             chan bool
 	opts             *DiskManagerOpts
 	wg               sync.WaitGroup
+	pathPrefix       string
 }
 
 func (d *DiskManager) Start() {
@@ -56,7 +59,19 @@ func (d *DiskManager) startWorker() {
 		case data := <-d.serializableData:
 			worker, ok := d.fileWorkers[data.Key]
 			if !ok {
-				worker = NewFileWorker(make(chan []byte, d.opts.WorkerChannelSize), data.Key, d.opts.WorkerTimeout, d.unregister)
+				var err error
+
+				worker, err = NewFileWorker(make(chan []byte, d.opts.WorkerChannelSize),
+					data.Key,
+					d.opts.WorkerTimeout,
+					d.unregister,
+					d.pathPrefix)
+
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
 				d.fileWorkers[data.Key] = worker
 				worker.Start()
 				d.wg.Add(1)
@@ -86,6 +101,9 @@ func NewDiskManager(opts *DiskManagerOpts) SerializationManager {
 		opts = &DiskManagerOpts{}
 	}
 
+	if len(opts.PathPrefix) == 0 {
+		opts.PathPrefix = "."
+	}
 	// Default channel size of 10
 	if opts.WorkerChannelSize <= 0 {
 		opts.WorkerChannelSize = 10
@@ -97,6 +115,7 @@ func NewDiskManager(opts *DiskManagerOpts) SerializationManager {
 	}
 
 	dm := &DiskManager{
+		pathPrefix:       opts.PathPrefix,
 		wg:               sync.WaitGroup{},
 		stop:             make(chan bool),
 		opts:             opts,

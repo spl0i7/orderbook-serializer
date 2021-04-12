@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"sync"
 	"time"
 )
@@ -16,18 +17,19 @@ type FileWorker struct {
 	timeout    time.Duration
 	unregister chan *FileWorker
 	stop       chan bool
+	filePath   string
 }
 
 func (w *FileWorker) startWorker() {
-	log.Println("Starting Worker for file : ", w.key)
+	log.Println("Starting Worker for file : ", w.filePath)
 
 	timer := time.NewTimer(w.timeout)
 	defer timer.Stop()
 
-	file, err := os.OpenFile(w.key, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(w.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
-		log.Println("Worker cannot start for file : ", w.key, err)
+		log.Println("Worker cannot start for file : ", w.filePath, err)
 		return
 	}
 
@@ -44,11 +46,11 @@ LOOP:
 			writer.Write(d)
 			writer.WriteString("\n")
 		case <-timer.C:
-			fmt.Println("No data since :", w.timeout, "stopping worker for", w.key)
+			fmt.Println("No data since :", w.timeout, "stopping worker for", w.filePath)
 			w.unregister <- w
 			break LOOP
 		case <-w.stop:
-			fmt.Println("stopping worker for", w.key)
+			fmt.Println("stopping worker for", w.filePath)
 			break LOOP
 
 		}
@@ -76,9 +78,19 @@ func NewFileWorker(dataChan chan []byte,
 	key string,
 	timeout time.Duration,
 	unregister chan *FileWorker,
-) *FileWorker {
+	pathPrefix string,
+) (*FileWorker, error) {
+
+	filePath := path.Join(pathPrefix, key+".json")
+
+	directory, _ := path.Split(filePath)
+
+	if err := os.MkdirAll(directory, 0755); err != nil {
+		return nil, err
+	}
 
 	worker := &FileWorker{
+		filePath:   filePath,
 		wg:         sync.WaitGroup{},
 		data:       dataChan,
 		key:        key,
@@ -86,5 +98,5 @@ func NewFileWorker(dataChan chan []byte,
 		unregister: unregister,
 		stop:       make(chan bool),
 	}
-	return worker
+	return worker, nil
 }
