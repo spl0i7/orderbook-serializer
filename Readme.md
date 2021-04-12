@@ -10,6 +10,8 @@ streams = [
   "coinbase"
 ]
 
+# Root directory in which subsequent directory and files will be created
+directory = "/tmp/"
 
 # Redis specific configuration, required to establish a connection
 
