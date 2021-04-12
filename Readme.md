@@ -32,3 +32,19 @@ streams = [
 ## Serialization
 
 Current implementation creates a file with same as that of stream and writes data to it, plan is to refactor it to write it to files based on message in the stream.
+
+## Building
+
+Make sure you have go installed (1.14 and above preferred)
+
+### Download the dependencies
+`go mod download`
+
+### Build the executable
+`go build .`
+
+### Execute
+`./orderbook-serializer -config=<path to toml config>`
+
+
+
